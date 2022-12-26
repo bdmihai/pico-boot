@@ -193,4 +193,5 @@ SECTIONS {
 
     /* used by runtime to check the HEAP */
     __StackLimit = __heap_end;
+    end = __heap_start;
 }
