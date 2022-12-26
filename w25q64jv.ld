@@ -1,0 +1,183 @@
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+
+ENTRY(_stage2_boot)
+
+MEMORY {
+    FLASH     (rx) : ORIGIN = 0x10000000, LENGTH = 2048K
+    RAM      (rwx) : ORIGIN = 0x20000000, LENGTH = 256k
+    BOOT2     (rx) : ORIGIN = 0x20041f00, LENGTH = 256
+    SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
+    SCRATCH_Y(rwx) : ORIGIN = 0x20041000, LENGTH = 4k
+}
+
+SECTIONS {
+    /* the first 256 bytes from flash are reserved for the second stage boot */
+    .boot2 : {
+        __boot2_start = .;
+        KEEP(*(.boot2._stage2_boot))
+        KEEP(*(.boot2))
+        . = __boot2_start + LENGTH(BOOT2) - 4; /* reserve 4 bytes for patching a CRC */
+        LONG(0xEFBEADDE); 
+        __boot2_end = .;
+    } > BOOT2 AT> FLASH =0x00
+
+    /* the interupt vectors as defined for the rp2040 */
+    .vectors : {
+        . = ALIGN(4);
+        KEEP(*(.vectors));
+        . = ALIGN(4);
+    } > FLASH
+
+    /* Put program code and other data into FLASH */
+    .text : {
+        . = ALIGN(4);
+        __text_start = .;
+
+        *(.text)
+        *(.text*)
+        *(.glue_7)
+        *(.glue_7t)
+        *(.eh_frame)
+
+        KEEP(*(.init))
+        KEEP(*(.fini))
+
+        . = ALIGN(4);
+        __text_end = .;
+    } > FLASH
+
+    /* put constant (read-only) data into FLASH */
+    .rodata : {
+        . = ALIGN(4);
+        __rodata_start = .;
+
+        *(.rodata)
+        *(.rodata*)
+
+        . = ALIGN(4);
+        __rodata_end = .;
+    } > FLASH
+
+    .ARM.extab : {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
+    } > FLASH
+
+    .ARM : {
+        __exidx_start = .;
+        *(.ARM.exidx*)
+        __exidx_end = .;
+    } > FLASH
+
+    .preinit_array : {
+        PROVIDE_HIDDEN(__preinit_array_start = .);
+        KEEP(*(.preinit_array*))
+        PROVIDE_HIDDEN(__preinit_array_end = .);
+    } > FLASH
+    .init_array : {
+        PROVIDE_HIDDEN(__init_array_start = .);
+        KEEP(*(.init_array*))
+        PROVIDE_HIDDEN(__init_array_end = .);
+    } > FLASH
+    .fini_array : {
+        PROVIDE_HIDDEN(__fini_array_start = .);
+        KEEP(*(.fini_array*))
+        PROVIDE_HIDDEN(__fini_array_end = .);
+    } > FLASH
+
+    /* runtime vector table shall be in RAM */
+    .ram_vector_table (NOLOAD): {
+        *(.ram_vector_table)
+    } > RAM
+
+    /* initialized global variables for the striped RAM */
+    .data : {
+        . = ALIGN(4);
+        __data_start = .;
+
+        *(.time_critical*)
+
+        *(.data)
+        *(.data*)
+
+        . = ALIGN(4);
+        /* preinit data */
+        PROVIDE_HIDDEN (__mutex_array_start = .);
+        KEEP(*(SORT(.mutex_array.*)))
+        KEEP(*(.mutex_array))
+        PROVIDE_HIDDEN (__mutex_array_end = .);
+
+        . = ALIGN(4);
+        __data_end = .;
+    } > RAM AT> FLASH
+    __data_source = LOADADDR(.data);
+
+    /* uninitialized global variables for the striped RAM */
+    .bss : {
+        . = ALIGN(4);
+        __bss_start = .;
+        __bss_start__ = __bss_start;
+
+        *(.bss)
+        *(.bss*)
+        *(COMMON)
+
+        . = ALIGN(4);
+        __bss_end = .;
+        __bss_end__ = __bss_end;
+    } > RAM
+
+    /* heap for dymamic alocation in freeRTOS */
+    .heap (NOLOAD) : {
+        . = ALIGN(4);
+        __heap_start = .;
+
+        *(.heap)
+        *(.heap*)
+
+        . = ALIGN(4);
+        __heap_end = .;
+    } > RAM
+
+    /* initialized global variables for the 1'st 4KB block */
+    .scratch_x : {
+        __scratch_x_start = .;
+        *(.scratch_x.*)
+        . = ALIGN(4);
+        __scratch_x_end = .;
+    } > SCRATCH_X AT > FLASH
+    __scratch_x_source = LOADADDR(.scratch_x);
+
+    /* core0 stack placed in the 1'st 4KB block */
+    .stack : {
+        . = ALIGN(4);
+        PROVIDE ( end = . ); /* needed by libc */
+        __stack_start = .;
+        
+        . = . + LENGTH(SCRATCH_X) - SIZEOF(.scratch_x);
+
+        . = ALIGN(4);
+        __stack_end = .;
+    } > SCRATCH_X
+
+    /* initialized global variables for the 2'st 4KB block */
+    .scratch_y : {
+        __scratch_y_start = .;
+        *(.scratch_y.*)
+        . = ALIGN(4);
+        __scratch_y_end = .;
+    } > SCRATCH_Y AT > FLASH
+    __scratch_y_source = LOADADDR(.scratch_y);
+
+    /DISCARD/ : {
+        libc.a(*)
+        libm.a(*)
+        libgcc.a(*)
+    }
+
+    .ARM.attributes 0 : {
+        *(.ARM.attributes)
+    }
+
+    /* used by runtime to check the HEAP */
+    __StackLimit = __heap_end;
+}
