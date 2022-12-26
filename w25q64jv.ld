@@ -3,7 +3,7 @@ OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 ENTRY(_stage2_boot)
 
 MEMORY {
-    FLASH     (rx) : ORIGIN = 0x10000000, LENGTH = 2048K
+    FLASH     (rx) : ORIGIN = 0x10000000, LENGTH = 8192K
     RAM      (rwx) : ORIGIN = 0x20000000, LENGTH = 256k
     BOOT2     (rx) : ORIGIN = 0x20041f00, LENGTH = 256
     SCRATCH_X(rwx) : ORIGIN = 0x20040000, LENGTH = 4k
