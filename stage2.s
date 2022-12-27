@@ -214,6 +214,8 @@ _stage2_boot:
     movs r1, #1
     str r1, [r3, #SSI_SSIENR_OFFSET]
 
+// TODO: fix the flash config for QSPI
+
 //    /* write enable */
 //    movs r0, #CMD_WRITE_ENABLE
 //    str r0, [r3, #SSI_DR0_OFFSET]

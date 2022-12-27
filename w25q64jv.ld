@@ -53,7 +53,7 @@ SECTIONS {
 
         *(.rodata)
         *(.rodata*)
-        *(.flashdata*)
+        KEEP(*(.flashdata*))
 
         . = ALIGN(4);
         __rodata_end = .;
@@ -139,13 +139,13 @@ SECTIONS {
         __bss_end__ = __bss_end;
     } > RAM
 
-    /* heap for dymamic alocation in freeRTOS */
+    /* heap for dymamic alocation */
     .heap (NOLOAD) : {
         . = ALIGN(4);
         __heap_start = .;
 
-        *(.heap)
-        *(.heap*)
+        KEEP(*(.heap))
+        KEEP(*(.heap*))
 
         . = ALIGN(4);
         __heap_end = .;
