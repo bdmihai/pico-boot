@@ -28,14 +28,25 @@
 /* Original code part of the pico SDK
    https://github.com/raspberrypi/pico-sdk/blob/master/src/rp2_common/pico_standard_link/crt0.S */
 
-
 .syntax unified
 .thumb
+
+// Header must be in first 256 bytes of main image (i.e. excluding flash boot2).
+// For flash builds we put it immediately after vector table; for NO_FLASH the
+// vectors are at a +0x100 offset because the bootrom enters RAM images directly
+// at their lowest address, so we put the header in the VTOR alignment hole.
+.section .binary_info_header, "a"
+binary_info_header:
+    .word 0x7188ebf2            // BINARY_INFO_MARKER_START
+    .word __binary_info_start
+    .word __binary_info_end
+    .word data_cpy_table        // we may need to decode pointers that are in RAM at runtime.
+    .word 0xe71aa390            // BINARY_INFO_MARKER_END
 
 /*-----------------------------------------------------------*/
 /*                  __get_current_exception                  */
 /*-----------------------------------------------------------*/
-.section .text, "ax"
+.section .text.util, "ax"
 .global __get_current_exception
 .type __get_current_exception,%function
 .thumb_func
@@ -43,5 +54,25 @@ __get_current_exception:
     mrs  r0, ipsr
     uxtb r0, r0
     bx   lr
+
+/*-----------------------------------------------------------*/
+/*                         runtime_init                      */
+/*-----------------------------------------------------------*/
+.weak runtime_init
+.type runtime_init,%function
+.thumb_func
+runtime_init:
+    bx lr
+
+/*-----------------------------------------------------------*/
+/*                             exit                          */
+/*-----------------------------------------------------------*/
+.weak exit
+.type exit,%function
+.thumb_func
+exit:
+1:
+    bkpt #0
+    b 1b
 
 .end

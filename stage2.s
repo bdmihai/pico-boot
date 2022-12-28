@@ -169,8 +169,7 @@ write_flash_sreg:
 .global _stage2_boot
 .thumb_func
 _stage2_boot:
-    /* force debug breakpoint */
-    //bkpt 
+    /* keep the link register - if 0 we are comming from bootrom */
     push {lr}
 
     /* SCLK 8mA drive, no slew limiting */
@@ -286,8 +285,17 @@ _stage2_boot:
     movs r1, #1
     str r1, [r3, #SSI_SSIENR_OFFSET]
 
-    /* set the vector and branch to the reset handler */
+    // If entered from the bootrom, lr (which we earlier pushed) will be 0,
+    // and we vector through the table at the start of the main flash image.
+    // Any regular function call will have a nonzero value for lr.
+check_return:
+    pop {r0}
+    cmp r0, #0
+    beq vector_into_flash
+    bx r0
 
+    /* set the vector and branch to the reset handler */
+vector_into_flash:
     ldr r0, =(XIP_BASE + 0x100)
     ldr r1, =(PPB_BASE + M0PLUS_VTOR_OFFSET)
     str r0, [r1]

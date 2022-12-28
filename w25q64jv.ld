@@ -21,18 +21,17 @@ SECTIONS {
         __boot2_end = .;
     } > BOOT2 AT> FLASH =0x00
 
-    /* the interupt vectors as defined for the rp2040 */
-    .vectors : {
-        . = ALIGN(4);
-        KEEP(*(.vectors));
-        . = ALIGN(4);
-    } > FLASH
-
-    /* Put program code and other data into FLASH */
+    /* program code and other executable data */
     .text : {
         . = ALIGN(4);
         __text_start = .;
 
+        /* the interupt vectors as defined for the rp2040 */
+        KEEP(*(.vectors));
+
+        /*  binary info header */
+        KEEP(*(.binary_info_header))
+        
         *(.text)
         *(.text*)
         *(.glue_7)
@@ -45,11 +44,17 @@ SECTIONS {
         . = ALIGN(4);
         __text_end = .;
     } > FLASH
-
+    
     /* put constant (read-only) data into FLASH */
     .rodata : {
         . = ALIGN(4);
         __rodata_start = .;
+
+        /* machine inspectable binary information */
+        __binary_info_start = .;
+        KEEP(*(.binary_info.keep.*))
+        *(.binary_info.*)
+        __binary_info_end = .;
 
         *(.rodata)
         *(.rodata*)

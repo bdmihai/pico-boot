@@ -39,59 +39,59 @@
 
 .global __vectors
 __vectors:
-.word __stack_end
-.word isr_reset
-.word isr_nmi
-.word isr_hardfault
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_svcall
-.word isr_invalid // Reserved, should never fire
-.word isr_invalid // Reserved, should never fire
-.word isr_pendsv
-.word isr_systick
-.word isr_irq0
-.word isr_irq1
-.word isr_irq2
-.word isr_irq3
-.word isr_irq4
-.word isr_irq5
-.word isr_irq6
-.word isr_irq7
-.word isr_irq8
-.word isr_irq9
-.word isr_irq10
-.word isr_irq11
-.word isr_irq12
-.word isr_irq13
-.word isr_irq14
-.word isr_irq15
-.word isr_irq16
-.word isr_irq17
-.word isr_irq18
-.word isr_irq19
-.word isr_irq20
-.word isr_irq21
-.word isr_irq22
-.word isr_irq23
-.word isr_irq24
-.word isr_irq25
-.word isr_irq26
-.word isr_irq27
-.word isr_irq28
-.word isr_irq29
-.word isr_irq30
-.word isr_irq31
+    .word __stack_end
+    .word isr_reset
+    .word isr_nmi
+    .word isr_hardfault
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_svcall
+    .word isr_invalid // Reserved, should never fire
+    .word isr_invalid // Reserved, should never fire
+    .word isr_pendsv
+    .word isr_systick
+    .word isr_irq0
+    .word isr_irq1
+    .word isr_irq2
+    .word isr_irq3
+    .word isr_irq4
+    .word isr_irq5
+    .word isr_irq6
+    .word isr_irq7
+    .word isr_irq8
+    .word isr_irq9
+    .word isr_irq10
+    .word isr_irq11
+    .word isr_irq12
+    .word isr_irq13
+    .word isr_irq14
+    .word isr_irq15
+    .word isr_irq16
+    .word isr_irq17
+    .word isr_irq18
+    .word isr_irq19
+    .word isr_irq20
+    .word isr_irq21
+    .word isr_irq22
+    .word isr_irq23
+    .word isr_irq24
+    .word isr_irq25
+    .word isr_irq26
+    .word isr_irq27
+    .word isr_irq28
+    .word isr_irq29
+    .word isr_irq30
+    .word isr_irq31
 
 /*-----------------------------------------------------------*/
 /*                        reset handler                      */
 /*-----------------------------------------------------------*/
-.section .text, "ax"
+.section .text.isr_reset, "ax"
 .type isr_reset,%function
 .thumb_func
 isr_reset:
@@ -117,6 +117,7 @@ bss_fill_test:
     bne bss_fill_loop
 
     /* call runtime_init, main and exit funcions */
+platform_entry:
     ldr r1, =runtime_init
     blx r1
     ldr r1, =main
@@ -133,21 +134,24 @@ data_cpy:
     bx lr
 
 .align 2
+.global data_cpy_table
 data_cpy_table:
-.word __data_source
-.word __data_start
-.word __data_end
-.word __scratch_x_source
-.word __scratch_x_start
-.word __scratch_x_end
-.word __scratch_y_source
-.word __scratch_y_start
-.word __scratch_y_end
-.word 0 // null terminator
+    .word __data_source
+    .word __data_start
+    .word __data_end
+    .word __scratch_x_source
+    .word __scratch_x_start
+    .word __scratch_x_end
+    .word __scratch_y_source
+    .word __scratch_y_start
+    .word __scratch_y_end
+    .word 0 // null terminator
 
 /*-----------------------------------------------------------*/
 /*                 default exception handlers                */
 /*-----------------------------------------------------------*/
+.section .text.default_exception_handlers, "a"
+
 .macro decl_isr_bkpt name
 .weak \name
 .type \name,%function
@@ -212,25 +216,5 @@ __unhandled_user_irq:
 .global unhandled_user_irq_num_in_r0
 unhandled_user_irq_num_in_r0:
     bkpt #0
-
-/*-----------------------------------------------------------*/
-/*                         runtime_init                      */
-/*-----------------------------------------------------------*/
-.weak runtime_init
-.type runtime_init,%function
-.thumb_func
-runtime_init:
-    bx lr
-
-/*-----------------------------------------------------------*/
-/*                             exit                          */
-/*-----------------------------------------------------------*/
-.weak exit
-.type exit,%function
-.thumb_func
-exit:
-1:
-    bkpt #0
-    b 1b
 
 .end
