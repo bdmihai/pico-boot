@@ -1,6 +1,6 @@
 OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
 
-ENTRY(_stage2_boot)
+ENTRY(isr_reset)
 
 MEMORY {
     FLASH     (rx) : ORIGIN = 0x10000000, LENGTH = 8192K
@@ -29,10 +29,11 @@ SECTIONS {
         /* the interupt vectors as defined for the rp2040 */
         KEEP(*(.vectors));
 
-        /*  binary info header */
+        /* binary info header */
         KEEP(*(.binary_info_header))
         
         *(.text)
+        *(.text.isr*)
         *(.text*)
         *(.glue_7)
         *(.glue_7t)
@@ -40,6 +41,20 @@ SECTIONS {
 
         KEEP(*(.init))
         KEEP(*(.fini))
+
+        /* pull all c'tors into .text */
+        *crtbegin.o(.ctors)
+        *crtbegin?.o(.ctors)
+        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
+        *(SORT(.ctors.*))
+        *(.ctors)
+        
+        /* followed by destructors */
+        *crtbegin.o(.dtors)
+        *crtbegin?.o(.dtors)
+        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .dtors)
+        *(SORT(.dtors.*))
+        *(.dtors)
 
         . = ALIGN(4);
         __text_end = .;

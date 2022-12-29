@@ -44,6 +44,6 @@ Product {
     Export {
         Depends { name: 'rp' }
         rp.libraryPaths: [ exportingProduct.destinationDirectory, exportingProduct.sourceDirectory ]
-        rp.linkerFlags: ['-Wl,--undefined=__vectors']
+        rp.linkerFlags: ['-Wl,--undefined=_stage2_boot']
     }
 }

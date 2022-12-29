@@ -150,8 +150,7 @@ data_cpy_table:
 /*-----------------------------------------------------------*/
 /*                 default exception handlers                */
 /*-----------------------------------------------------------*/
-.section .text.default_exception_handlers, "a"
-
+.section .text.isr_default, "ax"
 .macro decl_isr_bkpt name
 .weak \name
 .type \name,%function
