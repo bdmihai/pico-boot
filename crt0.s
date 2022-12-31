@@ -92,6 +92,7 @@ __vectors:
 /*                        reset handler                      */
 /*-----------------------------------------------------------*/
 .section .text.isr_reset, "ax"
+.global isr_reset
 .type isr_reset,%function
 .thumb_func
 isr_reset:

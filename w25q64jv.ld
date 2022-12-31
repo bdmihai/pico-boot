@@ -23,21 +23,19 @@ SECTIONS {
 
     /* program code and other executable data */
     .text : {
-        . = ALIGN(4);
         __text_start = .;
 
         /* the interupt vectors as defined for the rp2040 */
         KEEP(*(.vectors));
 
         /* binary info header */
+        __binary_info_header_start = .;
         KEEP(*(.binary_info_header))
+        __binary_info_header_end = .;
         
-        *(.text)
+        /* exception handlers */
         *(.text.isr*)
         *(.text*)
-        *(.glue_7)
-        *(.glue_7t)
-        *(.eh_frame)
 
         KEEP(*(.init))
         KEEP(*(.fini))
@@ -56,6 +54,8 @@ SECTIONS {
         *(SORT(.dtors.*))
         *(.dtors)
 
+        *(.eh_frame)
+
         . = ALIGN(4);
         __text_end = .;
     } > FLASH
@@ -71,8 +71,11 @@ SECTIONS {
         *(.binary_info.*)
         __binary_info_end = .;
 
-        *(.rodata)
+        . = ALIGN(4);
         *(.rodata*)
+
+        /* data marked as read only and that shall be stored in flash */
+        . = ALIGN(4);
         KEEP(*(.flashdata*))
 
         . = ALIGN(4);
@@ -101,7 +104,7 @@ SECTIONS {
 
         *(.time_critical*)
 
-        *(.data)
+        . = ALIGN(4);
         *(.data*)
 
         . = ALIGN(4);
@@ -142,6 +145,7 @@ SECTIONS {
         . = ALIGN(4);
         *(.uninitialized_data*)
         *(.uninitialized_ram*)
+        . = ALIGN(4);
     } > RAM
 
     /* uninitialized global variables for the striped RAM - set to 0 at runtime init */
@@ -149,11 +153,7 @@ SECTIONS {
         . = ALIGN(4);
         __bss_start = .;
         __bss_start__ = __bss_start;
-
-        *(.bss)
         *(.bss*)
-        *(COMMON)
-
         . = ALIGN(4);
         __bss_end = .;
         __bss_end__ = __bss_end;
@@ -163,10 +163,7 @@ SECTIONS {
     .heap (NOLOAD) : {
         . = ALIGN(4);
         __heap_start = .;
-
-        KEEP(*(.heap))
         KEEP(*(.heap*))
-
         . = ALIGN(4);
         __heap_end = .;
     } > RAM
@@ -214,4 +211,7 @@ SECTIONS {
     /* used by runtime to check the HEAP */
     __StackLimit = __heap_end;
     end = __heap_start;
+
+    /* binary info header must be in the first 256 bytes (excluding boot2) */
+    ASSERT( __binary_info_header_end - __text_start <= 256, "Binary info must be in first 256 bytes of the binary")
 }
