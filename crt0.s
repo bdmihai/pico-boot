@@ -39,7 +39,7 @@
 
 .global __vectors
 __vectors:
-    .word __stack_end
+    .word __stack0_top
     .word isr_reset
     .word isr_nmi
     .word isr_hardfault

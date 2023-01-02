@@ -19,10 +19,10 @@ SECTIONS {
         . = __boot2_start + LENGTH(BOOT2) - 4; /* reserve 4 bytes for patching a CRC */
         LONG(0xEFBEADDE); 
         __boot2_end = .;
-    } > BOOT2 AT> FLASH =0x00
+    } >BOOT2 AT >FLASH =0x00
 
     /* program code and other executable data */
-    .text : {
+    .text : ALIGN(4) {
         __text_start = .;
 
         /* the interupt vectors as defined for the rp2040 */
@@ -56,13 +56,11 @@ SECTIONS {
 
         *(.eh_frame)
 
-        . = ALIGN(4);
         __text_end = .;
-    } > FLASH
+    } >FLASH
     
     /* put constant (read-only) data into FLASH */
-    .rodata : {
-        . = ALIGN(4);
+    .rodata : ALIGN(4) {
         __rodata_start = .;
 
         /* machine inspectable binary information */
@@ -78,28 +76,26 @@ SECTIONS {
         . = ALIGN(4);
         KEEP(*(.flashdata*))
 
-        . = ALIGN(4);
         __rodata_end = .;
-    } > FLASH
+    } >FLASH
 
     .ARM.extab : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > FLASH
+    } >FLASH
 
     .ARM : {
         __exidx_start = .;
         *(.ARM.exidx*)
         __exidx_end = .;
-    } > FLASH
+    } >FLASH
 
     /* runtime vector table shall be in RAM */
-    .ram_vector_table (NOLOAD): {
+    .ram_vector_table (COPY): {
         *(.ram_vector_table)
-    } > RAM
+    } >RAM
 
     /* initialized global variables for the striped RAM */
-    .data : {
-        . = ALIGN(4);
+    .data : ALIGN(4){
         __data_start = .;
 
         *(.time_critical*)
@@ -135,68 +131,71 @@ SECTIONS {
         *(.fini_array)
         PROVIDE_HIDDEN (__fini_array_end = .);
 
-        . = ALIGN(4);
         __data_end = .;
-    } > RAM AT> FLASH
+    } >RAM AT >FLASH
     __data_source = LOADADDR(.data);
 
     /* uninitialized global variables for the striped RAM - keeps value between resets */
-    .uninitialized_data (COPY): {
-        . = ALIGN(4);
+    .uninitialized_data (COPY): ALIGN(4) {
         *(.uninitialized_data*)
         *(.uninitialized_ram*)
-        . = ALIGN(4);
-    } > RAM
+    } >RAM
 
     /* uninitialized global variables for the striped RAM - set to 0 at runtime init */
-    .bss : {
-        . = ALIGN(4);
+    .bss : ALIGN(4) {
         __bss_start = .;
-        __bss_start__ = __bss_start;
+
         *(.bss*)
-        . = ALIGN(4);
+
         __bss_end = .;
-        __bss_end__ = __bss_end;
-    } > RAM
+    } >RAM
 
     /* heap for dymamic alocation */
-    .heap (NOLOAD) : {
-        . = ALIGN(4);
+    .heap (NOLOAD) : ALIGN(4) {
         __heap_start = .;
+
         KEEP(*(.heap*))
-        . = ALIGN(4);
+
         __heap_end = .;
-    } > RAM
+    } >RAM
 
     /* initialized global variables for the 1'st 4KB block */
     .scratch_x : {
         __scratch_x_start = .;
+
         *(.scratch_x.*)
-        . = ALIGN(4);
+
         __scratch_x_end = .;
-    } > SCRATCH_X AT > FLASH
+    } >SCRATCH_X AT >FLASH
     __scratch_x_source = LOADADDR(.scratch_x);
 
     /* core0 stack placed in the 1'st 4KB block */
-    .stack : {
-        . = ALIGN(4);
-        PROVIDE ( end = . ); /* needed by libc */
-        __stack_start = .;
-        
+    .stack0 (OVERLAY) : ALIGN(4) {
+        __stack0_bottom = .;
+
         . = . + LENGTH(SCRATCH_X) - SIZEOF(.scratch_x);
 
-        . = ALIGN(4);
-        __stack_end = .;
-    } > SCRATCH_X
+        __stack0_top = .;
+    } >SCRATCH_X
 
     /* initialized global variables for the 2'st 4KB block */
     .scratch_y : {
         __scratch_y_start = .;
+
         *(.scratch_y.*)
-        . = ALIGN(4);
+
         __scratch_y_end = .;
-    } > SCRATCH_Y AT > FLASH
+    } >SCRATCH_Y AT >FLASH
     __scratch_y_source = LOADADDR(.scratch_y);
+
+    /* core1 stack placed in the 1'st 4KB block */
+    .stack1 (OVERLAY) : ALIGN(4) {
+        __stack1_bottom = .;
+
+        . = . + LENGTH(SCRATCH_Y) - SIZEOF(.scratch_y);
+
+        __stack1_top = .;
+    } >SCRATCH_Y
 
     /DISCARD/ : {
         libc.a(*)
@@ -208,10 +207,7 @@ SECTIONS {
         *(.ARM.attributes)
     }
 
-    /* used by runtime to check the HEAP */
-    __StackLimit = __heap_end;
-    end = __heap_start;
-
     /* binary info header must be in the first 256 bytes (excluding boot2) */
     ASSERT( __binary_info_header_end - __text_start <= 256, "Binary info must be in first 256 bytes of the binary")
 }
+
